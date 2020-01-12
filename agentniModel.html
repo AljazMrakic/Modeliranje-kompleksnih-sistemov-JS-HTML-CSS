@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>MKS Agentni Model</title>
+    </head>
+    <body onload="load()">
+        <div class="container">
+            <div id="header">
+                <header>
+                    <div class="imeInPriimek">
+                        <h3>Aljaž Mrakič | Fakulteta za organizacijske vede | Modeliranje Kompleksnih Sistemov</h3>
+                    </div><br>
+                    <div class="buttons">
+                        <a href="MKS_main.html">
+                            <button type="button" class="button">Začetna Stran</button>
+                        </a>
+                        <a href="zvezniModel.html">
+                            <button type="button" class="button button2">Zvezni Model</button>      
+                        </a>
+                    </div>
+                </header>
+            </div>
+            <div class="naslov">
+                <h3>Agentni model</h3>
+            </div>
+            <div class="paragraph">
+                <p>Model ponazarja semaforizirano križišče in gibanje agentov (avtomobilov) po njem.
+                </p>
+            </div>
+            <div id="inputFieldsButtons">
+                Število agentov X: <input type="number" id="numAgentsX" value="10" disabled><br>
+                Število agentov Y: <input type="number" id="numAgentsY" value="5" disabled><br>
+                Čas teka modela: <input type="number" id="stoptime" value="1000"><br>
+                Število agentov skozi križišče: <input type="number" id="numOfAgents" value="0" disabled><br>
+                <br>
+                <button type="button" onclick="Start();">Start</button>
+                <button type="button" onclick="Stop();">Stop</button>
+                <br><br>
+            </div>
+            <div class="model">
+                <canvas id="model1" width="1000" height="500" style="border: 1px solid #000000;"></canvas> <!-- Model -->
+            </div>
+            <div class="chart1">
+                Graf prehodov agentov skozi križišče<br>
+                <canvas id="chart1" width="1000" height="150" style="border: 1px solid #000000;"></canvas> <!-- Graf1 -->
+                <br><br>
+            </div>
+            <div id="footer">
+                <footer>
+                    <div class="footerContent">
+                        <p>&copy; Aljaž Mrakič 2019</p>
+                    </div>
+                </footer>
+            </div>
+        </div>
+        <!--************************** SCRIPT **************************-->
+        <script src="graf.js"></script> <!-- Graf Script -->
+        <script type="text/javascript">
+        "use strict"; // omogočimo delo z razredi ("class")
+
+            let numberOfAgentsOnXaxis = 10; // število agentov na x osi
+            let numberOfAgentsOnYaxis = 5; // število agentov na y osi
+
+            let random = null; // smer gibanja in hitrost agentov, ki je pridobljena s funkcijo "randomNumber()"
+
+            let agentXpositionOnYaxis = null; // pozicija agentaX na y osi glede na smer gibanja (če je 1 se giblje pod črto, če je -1 se nad)
+            let agentYpositionOnXaxis = null; // pozicija agentaY na x osi glede na smer gibanja
+
+            let agentsTableX = []; // array za agente, ki se gibljejo po x osi
+            let agentsTableY = []; // array za agente, ki se gibljejo po y osi
+
+            // čas teka celotnega modela
+            let time = 0;
+
+            // Semafor
+            let lightTime = 0; // čas za semafor
+            let lightsCycleTime = 800; // čas, ki ga potrebuje semafor za celoten cikel
+            let redLight = 0; // boolean ali je rdeča luč na x osi prižgana ali ne
+
+            // Graf vrednosti
+            const chart = document.getElementById("chart1");
+            const chartHeigth = chart.height;
+            const chartWidth = chart.width;
+            let chart1;
+            let numOfAgents = 0; // število agentov, ki je prevozilo križišče
+            let numOfAgentsX = 0; // število agentov, ki je prevozilo križišče po X osi
+            let numOfAgentsY = 0; // število agentov, ki je prevozilo križišče po Y osi
+
+            // Platno
+            const canvas = document.getElementById("model1"); // pridobi canvas
+            const ctx = canvas.getContext("2d"); // pridobi "context"
+            const canvasHeight = canvas.height; // pridobi višino platna
+            const canvasWidth = canvas.width; // pridobi širino platna
+
+            // Ostale spremelnjivke
+            let startClick = 0; // sprem. za gumb start (da se klikne samo enkrat)
+            let stopTime = 1000; // čas po katerem se model ustavi
+            let active;
+
+            // ************************** RAZREDI **************************
+            // Razred AgentX (agenti, ki se gibljejo po X osi)
+            class AgentX{
+                constructor(agentPositionX, agentPositionY, agentSpeed, canvasWidth, canvasHeight){
+                    this.agentPositionX = agentPositionX;
+                    this.agentPositionY = agentPositionY;
+                    this.agentSpeed = agentSpeed;
+                    this.canvasWidth = canvasWidth;
+                    this.canvasHeight = canvasHeight;
+                    this.agentStopX = 0; // vrednost iz katere razberemo ali se mora agent ustaviti
+                }
+                movement(redLight){
+
+                    // če gori rdeča luč in se agent giblje od leve proti desni
+                    if(redLight == 1 && this.agentSpeed == 1){ // za agente, ki se gibljejo od leve proti desni na x osi in imajo hitrost 1
+                        if(this.agentPositionX == 450){
+                            this.agentPositionX = this.agentPositionX;
+                        }
+                        else if(this.agentStopX == 1 && this.agentPositionX < 450){ // če je agentStopX 1 in je pozicija agenta manjša od 450 => break
+                            this.agentStopX = 0;
+                            return;
+                        } 
+                        else{
+                            this.agentPositionX += this.agentSpeed;
+                        }
+                    }
+                    // če gori rdeča luč in se agent giblje od desne proti levi
+                    else if(redLight == 1 && this.agentSpeed == -1){ // za agente, ki se gibljejo od desne proti levi na x osi in imajo hitrost -1
+                        if(this.agentPositionX == 530){
+                            this.agentPositionX = this.agentPositionX;
+                        }
+                        else if(this.agentStopX == 1 && this.agentPositionX > 530){ // če je agentStopX 1 in je pozicija agenta manjša od 450 => break
+                            this.agentStopX = 0;
+                            return;
+                        }
+                        else{
+                            this.agentPositionX += this.agentSpeed;
+                        }
+                    }
+                    else{
+                        this.agentPositionX += this.agentSpeed;
+                    }
+
+                    // resetiranje agentov x pozcije na začetek
+                    if(this.agentPositionX >= canvasWidth)
+                        this.agentPositionX = 0;
+                    if(this.agentPositionX < 0)
+                        this.agentPositionX = canvasWidth;
+                    
+                }
+
+                stop(aStopX){ // funkcija, ki prejme parametr aStopX in ga zapiše v agentStopX
+                    this.agentStopX = aStopX; 
+                }
+            }
+            // Razred AgentY (agenti, ki se gibljejo po Y osi)
+            class AgentY{
+                constructor(agentPositionX, agentPositionY, agentSpeed, canvasWidth, canvasHeight){
+                    this.agentPositionX = agentPositionX;
+                    this.agentPositionY = agentPositionY;
+                    this.agentSpeed = agentSpeed;
+                    this.canvasWidth = canvasWidth;
+                    this.canvasHeight = canvasHeight;
+                    this.agentStopY = 0;
+                }
+
+                movement(redLight){
+                    if(redLight == 0 && this.agentSpeed == 1){
+                        if(this.agentPositionY == 200){
+                            this.agentPositionY = this.agentPositionY;
+                        }
+                        else if(this.agentStopY == 1 && this.agentPositionY < 200){
+                            this.agentStopY = 0;
+                            return;
+                        }
+                        else{
+                            this.agentPositionY += this.agentSpeed;
+                        }
+                    }
+                    else if(redLight == 0 && this.agentSpeed == -1){
+                        if(this.agentPositionY == 280){
+                            this.agentPositionY = this.agentPositionY;
+                        }
+                        else if(this.agentStopY == 1 && this.agentPositionY > 280){
+                            this.agentStopY = 0;
+                            return;
+                        }
+                        else{
+                            this.agentPositionY += this.agentSpeed;
+                        }
+                    }
+                    else{
+                        this.agentPositionY += this.agentSpeed;
+                    }
+
+                    // resetiranje agentov x pozcije na začetek
+                    if(this.agentPositionY >= canvasHeight)
+                        this.agentPositionY = 0;
+                    if(this.agentPositionY < 0)
+                        this.agentPositionY = canvasHeight;
+                }
+
+                stop(aStopY){
+                    this.agentStopY = aStopY;
+                }
+            }
+            // ************************** X RAZREDI X **************************
+
+            // funkcija za zapolnitev platna z belo barvo, izris črt in semaforja
+            function CanvasColorAndLines(){
+
+                lightTime++;
+
+                ctx.fillStyle = "#ffffff"; // za fillstyle izberemo belo barvo
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight); // platno zapolnimo z izbrano barvo
+
+                // izris ceste na platnu
+                ctx.setLineDash([5, 5])
+                ctx.beginPath();
+                ctx.moveTo(0, 250);
+                ctx.lineTo(1000, 250);
+                ctx.moveTo(500, 0);
+                ctx.lineTo(500, 500);
+                ctx.stroke();
+
+                if(lightTime <= lightsCycleTime/2){
+                    // gori zelena luč 3. kvadrant
+                    ctx.setLineDash([0, 0]);
+                    ctx.beginPath();
+                    ctx.arc(445, 280, 10, 0, 2 * Math.PI, false);
+                    ctx.fillStyle = "#00ff00";
+                    ctx.fill();
+                    ctx.stroke();
+                    // prazna rdeča luč 3. kvadrant
+                    ctx.setLineDash([0, 0]);
+                    ctx.beginPath();
+                    ctx.arc(470, 280, 10, 0, 2 * Math.PI, false);
+                    ctx.stroke();
+
+                    // gori rdeča luč v 4. kvadrantu
+                    ctx.setLineDash([0, 0]);
+                    ctx.beginPath();
+                    ctx.arc(530, 280, 10, 0, 2 * Math.PI, false);
+                    ctx.fillStyle = "red";
+                    ctx.fill();
+                    ctx.stroke();
+                    // prazna zelena luč v 4. kvadrantu
+                    ctx.setLineDash([0, 0]);
+                    ctx.beginPath();
+                    ctx.arc(530, 305, 10, 0, 2 * Math.PI, false);
+                    ctx.stroke();
+
+                    redLight = 0;
+                }
+                else if(lightTime >= lightsCycleTime){
+                    lightTime = 0; // resetiramo števec
+                }
+                else{
+                    // gori rdeča luč 3. kvadrant
+                    ctx.setLineDash([0, 0]);
+                    ctx.beginPath();
+                    ctx.arc(470, 280, 10, 0, 2 * Math.PI, false);
+                    ctx.fillStyle = "red";
+                    ctx.fill();
+                    ctx.stroke();
+                    // prazna zelena luč 3. kvadrant
+                    ctx.setLineDash([0, 0]);
+                    ctx.beginPath();
+                    ctx.arc(445, 280, 10, 0, 2 * Math.PI, false);
+                    ctx.stroke();
+
+                    // gori zelena luč v 4. kvadrantu
+                    ctx.setLineDash([0, 0]);
+                    ctx.beginPath();
+                    ctx.arc(530, 305, 10, 0, 2 * Math.PI, false);
+                    ctx.fillStyle = "#00ff00";
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // prazna rdeča luč v 4. kvadrantu
+                    ctx.setLineDash([0, 0]);
+                    ctx.beginPath();
+                    ctx.arc(530, 280, 10, 0, 2 * Math.PI, false);
+                    ctx.stroke();
+
+                    redLight = 1;
+                }
+            }
+
+            // funkcija za izris Agentov X iz tabele agentsTableX
+            function DrawAndLoopAgentsX(){ 
+                for(var i = 0; i < agentsTableX.length; i++){
+                    agentsTableX[i].movement(redLight);
+                    ctx.fillStyle = "#3399ff";
+                    ctx.fillRect(agentsTableX[i].agentPositionX, agentsTableX[i].agentPositionY, 20, 10);
+                }
+            }
+
+            // funkcija za izris Agentov Y iz tabele agentsTableY
+            function DrawAndLoopAgentsY(){
+                for(var i = 0; i < agentsTableY.length; i++){
+                    agentsTableY[i].movement(redLight);
+                    ctx.fillStyle = "#cc33ff";
+                    ctx.fillRect(agentsTableY[i].agentPositionX, agentsTableY[i].agentPositionY, 10, 20);
+                }
+            }
+
+            // funkcija za pridobitev naključnega števila za hitrost agentov, ki bo 1 ali -1
+            function RandomNumber(){
+                let rand = Math.random();
+                random = rand;
+
+                if(rand < 0.5){
+                    random = -1;
+                    agentXpositionOnYaxis = 240;
+                    agentYpositionOnXaxis = 500;
+                }
+                else{
+                    random = 1;
+                    agentXpositionOnYaxis = 250;
+                    agentYpositionOnXaxis = 490;
+                }
+            }
+            
+            // funkcija za preverjanje bližine agentov
+            function AgentsDistanceCheck(){
+                // za agente na x osi
+                let aStopX = 0;
+                let aStopY = 0;
+
+                // "loop" za število agentov na X osi
+                for(var i = 0; i < numberOfAgentsOnXaxis; i++){
+                    let x1 = agentsTableX[i];
+
+                    for(var j = i+1; j < numberOfAgentsOnXaxis; j++){
+                        let x2 = agentsTableX[j];
+                        let distanceX = Math.abs(x2.agentPositionX - x1.agentPositionX); // izračunamo absolutno razdaljo med agentoma na x osi
+                        
+                        if(distanceX <= 22){ // če je razdalja manjša od 22
+                            if(x1.agentSpeed == 1 && x2.agentSpeed == 1){ // če se agenti gibljejo od leve proti desni
+                                if(x1.agentPositionX > x2.agentPositionX){ // če je x1 pred x2
+                                    // x2 se ustavi za x1, da ne pride do trka
+                                    aStopX = 1;
+                                    x2.stop(aStopX);
+                                }
+                                else{
+                                    // x1 se ustavi za x2
+                                    aStopX = 1;
+                                    x1.stop(aStopX);
+                                }
+                            }
+                            else if(x1.agentSpeed == -1 && x2.agentSpeed == -1){ // če se agenti gibljejo od desne proti levi
+                                if(x1.agentPositionX > x2.agentPositionX){
+                                    // x1 se ustavi za x2, ker se agenti gibljejo od desne proti levi (reversed logic)
+                                    aStopX = 1;
+                                    x1.stop(aStopX);
+                                }
+                                else{
+                                    // x2 se ustavi za x1
+                                    aStopX = 1;
+                                    x2.stop(aStopX);
+                                }
+                            }
+                        }
+                    }
+
+                }
+
+                // "loop" za število agentov na Y osi
+                for(var k = 0; k < numberOfAgentsOnYaxis; k++){
+                    let y1 = agentsTableY[k];
+
+                    for(var l = k+1; l < numberOfAgentsOnYaxis; l++){
+                        let y2 = agentsTableY[l];
+                        let distanceY = Math.abs(y2.agentPositionY - y1.agentPositionY); // izračunamo absolutno razdaljo med agentoma na x osi
+                        
+                        if(distanceY <= 22){ // če je razdalja manjša od 22
+                            if(y1.agentSpeed == 1 && y2.agentSpeed == 1){ // če se agenti gibljejo od leve proti desni
+                                if(y1.agentPositionY > y2.agentPositionY){ // če je y1 pred y2
+                                    // y2 se ustavi za y1, da ne pride do trka
+                                    aStopY = 1;
+                                    y2.stop(aStopY);
+                                }
+                                else{
+                                    // y1 se ustavi za y2
+                                    aStopY = 1;
+                                    y1.stop(aStopY);
+                                }
+                            }
+                            else if(y1.agentSpeed == -1 && y2.agentSpeed == -1){ // če se agenti gibljejo od spodaj proti navzgor
+                                if(y1.agentPositionY > y2.agentPositionY){
+                                    // y1 se ustavi za y2, ker se agenti gibljejo od spodaj proti navzgor (reversed logic)
+                                    aStopY = 1;
+                                    y1.stop(aStopY);
+                                }
+                                else{
+                                    // y2 se ustavi za y1
+                                    aStopY = 1;
+                                    y2.stop(aStopY);
+                                }
+                            }
+                        }
+                    }
+
+                }
+            }
+
+            // funkcija za pridobitev vrednosti za izris v grafu, ki prikazuje koliko agentov prevozi križišče
+            function GrafValue(){
+
+                for(var i = 0; i < agentsTableX.length; i++){
+                    if(agentsTableX[i].agentPositionX > 499.5 && agentsTableX[i].agentPositionX < 500.5){ // če je agent med podanima vrednostima (na X osi)
+                        numOfAgentsX++; // se število agentov skozi križišče za enega poveča
+                    }
+                }
+                for(var j = 0; j < agentsTableY.length; j++){
+                    if(agentsTableY[j].agentPositionY > 249.5 && agentsTableY[j].agentPositionY < 250.5){ // (na Y osi)
+                        numOfAgentsY++;
+                    }
+                }
+
+                numOfAgents = numOfAgentsX + numOfAgentsY;
+
+                document.getElementById("numOfAgents").value = numOfAgents;
+            }
+
+            // funkcija zanka oz. za ponovno izrisanje na platnu
+            function Redraw(){
+
+                time++; // čas se poveča za 1
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight); // brisanje platna
+                
+                CanvasColorAndLines(); // klic funkcije za izris črt in zapolnitev platna z belo barvo
+                DrawAndLoopAgentsX(); // klic funkcije za izris agentov na x osi
+                DrawAndLoopAgentsY(); // klic funkcije za izris agentov na y osi
+                AgentsDistanceCheck(); // klic funkcije za preverjanje bližine agentov
+                GrafValue();
+
+                chart1.draw(numOfAgents);
+            }
+
+            chart1 = new Graf("chart1", chartWidth, chartHeigth);
+
+            // zanka za postavitev agentov na X os
+            for(var i = 0; i < numberOfAgentsOnXaxis; i++){
+                RandomNumber(); // klic funkcije za pridobitev hitrosti in smer gibanja
+                agentsTableX[i] = new AgentX(Math.random() * 1000 + 1, agentXpositionOnYaxis, random, canvasWidth, canvasHeight);
+            }
+
+            // zanka za postavitev agentov na Y os
+            for(var i = 0; i < numberOfAgentsOnYaxis; i++){
+                RandomNumber(); // klic funkcije za pridobitev hitrosti in smer gibanja
+                agentsTableY[i] = new AgentY(agentYpositionOnXaxis, Math.random() * 500 + 1, random, canvasWidth, canvasHeight);
+            }
+
+             /*
+            Za orientacijo glede pozcije agentov po smeri gibanja
+            agentsTableX[0] = new AgentX(0, 250, 1, canvasWidth, canvasHeight);
+            agentsTableX[1] = new AgentX(1000, 240, -1, canvasWidth, canvasHeight);
+
+            agentsTableY[0] = new AgentY(490, 0, 1, canvasWidth, canvasHeight);
+            agentsTableY[1] = new AgentY(500, 500, -1, canvasWidth, canvasHeight);
+            */
+
+            // ********************** MODEL CONTROL **********************
+
+            function load(){
+                CanvasColorAndLines();
+            }
+
+            function Loop(){
+                if(time >= stopTime){
+                    clearTimeout(active);
+                }
+                else{
+                    Redraw();
+                    active = setTimeout("Loop()", 5);
+                }
+            }
+
+            function Start(){
+                stopTime = document.getElementById("stoptime").value;
+                stopTime = parseInt(stopTime, 10);
+
+                if(startClick == 0){
+                    startClick = 1;
+                    Loop();
+                }
+            }
+
+            function Stop(){
+                if(active)
+                    clearTimeout(active);
+
+                startClick = 0;
+            }
+
+            // ********************** END OF MODEL CONTROL **********************
+
+        </script>
+        <!--********************** END of SCRIPT ***********************-->
+    </body>
+    <style type="text/css"> 
+        body{
+            margin: 0;
+        }
+        .container{
+            text-align: center;
+            background-color:rgb(154, 166, 177);
+            
+
+        }
+        header{
+            background-color: black;
+            height: 160px;
+            padding: 20px 20px;
+        }
+        .imeInPriimek{
+            font-family: sans-serif;
+            font-size: 20px;
+            font-style: italic;
+            color: white;
+            text-align: left;
+        }
+        .buttons{
+            text-align: center;
+        }
+        .button{
+            border: none;
+            color: white;
+            background-color: #008CBA;
+            padding: 15px 30px;
+            text-align: center;
+            font-family: sans-serif;
+            font-size: 16px;
+            margin: 10px 10px;
+            cursor: pointer;
+        }
+        .button:hover{
+            background-color: rgb(0, 106, 141);
+        }
+        form{
+            display: inline;
+        }
+        .naslov{
+            font-family: sans-serif;
+            font-size: 20px;
+            font-style: italic;
+        }
+        .paragraph{
+            font-size: 18px;
+            font-family: sans-serif;
+            text-align: center;
+        }
+        .model{
+            margin: 20px;
+        }
+        .chart1{
+           margin: 20px;
+        }
+        footer{
+            position: bottom;
+            bottom: 0;
+            width: 100%;
+            background-color: black;
+        }
+        .footerContent{
+            color: white;
+        }
+    </style>
+</html>

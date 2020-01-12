@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>MKS</title>
+    </head>
+    <body>
+        <div class="container">
+            <div id="header">
+                <header>
+                    <div class="imeInPriimek">
+                        <h3>Aljaž Mrakič | Fakulteta za organizacijske vede | Modeliranje Kompleksnih Sistemov</h3>
+                    </div><br>
+                    <div class="buttons">
+                        <a href="agentniModel.html">
+                            <button type="button" class="button">Agentni Model</button>
+                        </a>
+                        <a href="zvezniModel.html">
+                            <button type="button" class="button button2">Zvezni Model</button>      
+                        </a>
+                    </div>
+                </header>
+            </div>
+            <div class="naslov">
+                <h3>Začetna stran</h3>
+            </div>
+            <div class="paragraph">
+                <h3>OPIS MODELOV</h3>
+                <p>V seminarski nalogi sta predstavljena dva modela. Prvi model predstavlja agentno gibanje po poenostavljenem križišču, 
+                    kjer se agenti oziroma avtomobili gibljejo po X in Y osi v obe smeri. Obe osi imata tudi svoj semafor, katerega luči
+                    se izmenično spreminjajo na podlagi časov, ki so napisani v kodi. Agenti pri gibanju skozi križišče upoštevajo signalizacijo
+                    in se v primeru rdeče luči tudi ustavijo. Prav tako agenti drug z drugim ne trčijo, ampak ohranjajo razdaljo.
+                    Agenti se ob začetku modela postavijo na naključno pozicijo na določeni osi ter se začnejo gibati v smeri vožnje.
+                    Razlog, zakaj sem se odločil za tako postavitev, je ker sem hotel izhajati iz realnega sveta, kjer načeloma križišče ni nikoli prazno.
+                    Prav tako je z grafom prikazan pretok agentov skozi križišče po obeh oseh skupaj. Načeloma je bil cilj simulirati primerjavo med navadnih križiščem in
+                    krožnim križiščem ter nato s pomočjo grafa primerjati pretok. Problem, ki ga lahko trenutno obravnavamo s simulacijo tega modela je
+                    preobremenitev križišča ( število agentov preseže zmožnosti varnega in tekočega gibnaja agentov skozi križišče).
+                    <br><br>
+                    <img src="Slike\krizisce.jpg" width="25%" height="25%">
+                    <br><br>
+                    Zvezni model pa predstavlja razpad radioaktivnih jeder ogljika 14 (14C). To je radioaktivni izotop ogljika, ki ga znanstveniki
+                    uporabljajo za določitev starosti zgodovinskih predmetov. To tehniko je leta 1949 iznašel William Libby za določanje starosti
+                    arheoloških, geoloških in hidrogeoloških vzorcev oziroma najdb. Sam izotop ogljika pa je bil odkrit leta 1940 na univerzi v
+                    Kaliforniji. Model vsebuje vnosna polja, v katera lahko vnesemo poljubno vrednost elementov in za njih izračunamo oziroma
+                    vizualiziramo razpada. Prav tako lahko določimo korak za preračun vrednosti. Razpad je tudi vizualiziran s pomočjo grafa in
+                    tabele, v kateri se izpišejo vrednosti na podlagi koraka, ki smo ga določili v vnosnem polju. Problem, ki ga ta model naslavlja je izključitev
+                    računanja na roke za preračun starosti artefaktov na podlagi ogljičnega radioaktivnega razpada. Prav tako lahko s to pomočjo pregledamo
+                    kakšna je bila vsebnost izotopa ogljika po stoletjih.
+                    <br><br>
+                    <img src="Slike\carbondating.jpg" width="30%" height="30%">
+                    </p>
+                    <br>
+                    <button type="button" class="showBtn" onclick="showEc()">Enačba</button>
+                    <br><br>
+                    <div id="enacba" style="display: none;">
+                        <img src="Slike\enacba.jpg" width="50%" height="50%">
+                    </div>
+            </div>
+            <div id="footer">
+                <footer>
+                    <div class="footerContent">
+                        <p>&copy; Aljaž Mrakič 2019</p>
+                    </div>
+                </footer>
+            </div>
+        </div>
+        <!--************************** SCRIPT **************************-->
+        <script type="text/javascript">
+
+            function showEc(){
+                document.getElementById("enacba").style.display = "block";
+            }
+
+        </script>
+        <!--********************** END of SCRIPT ***********************-->
+    </body>
+    <style type="text/css"> 
+        body{
+            margin: 0;
+        }
+        .container{
+            text-align: center;
+            background-color:rgb(154, 166, 177);
+
+
+        }
+        header{
+            background-color: black;
+            height: 160px;
+            padding: 20px 20px;
+        }
+        .imeInPriimek{
+            font-family: sans-serif;
+            font-size: 20px;
+            font-style: italic;
+            color: white;
+            text-align: left;
+        }
+        .buttons{
+            text-align: center;
+        }
+        .button{
+            border: none;
+            color: white;
+            background-color: #008CBA;
+            padding: 15px 30px;
+            text-align: center;
+            font-family: sans-serif;
+            font-size: 16px;
+            margin: 10px 10px;
+            cursor: pointer;
+        }
+        .button:hover{
+            background-color: rgb(0, 106, 141);
+        }
+        form{
+            display: inline;
+        }
+        .naslov{
+            font-family: sans-serif;
+            font-size: 20px;
+            font-style: italic;
+        }
+        .paragraph{
+            font-size: 18px;
+            font-family: sans-serif;
+            text-align: justify;
+            margin-left: 400px;
+            margin-right: 400px;
+        }
+        img{
+            margin: 0 auto;
+            align-content: center;
+        }
+        footer{
+            position: bottom;
+            bottom: 0;
+            width: 100%;
+            background-color: black;
+        }
+        .footerContent{
+            color: white;
+        }
+    </style>
+</html>

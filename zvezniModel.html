@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>MKS Zvezni Model</title>
+    </head>
+    <body onload="load()">
+        <div class="container">
+            <div id="header">
+                <header>
+                    <div class="imeInPriimek">
+                        <h3>Aljaž Mrakič | Fakulteta za organizacijske vede | Modeliranje Kompleksnih Sistemov</h3>
+                    </div><br>
+                    <div class="buttons">
+                        <a href="MKS_main.html">
+                            <button type="button" class="button">Začetna Stran</button>
+                        </a>
+                        <a href="agentniModel.html">
+                            <button type="button" class="button button2">Agentni Model</button>      
+                        </a>
+                    </div>
+                </header>
+            </div>
+            <div class="naslov">
+                <h3>Zvezni model</h3>
+            </div>
+            <div class="paragraph">
+                <p>Model ponazarja razpad radioaktivnih jeder ogljika 14.
+                </p>
+            </div>
+            <div id="inputFieldsButtons">
+                Mass (t = 0) : <input type="number" id="mass0" value="300"><br>
+                Half life time :<input  type="number" id="halflife" value="5700"><br>
+                Time :<input  type="number" id="time"  value="2000"><br>
+                Time step :<input  type="number" id="timestep" value="100"><br><br>
+
+                <button type="button" onclick="Start();">Izračunaj</button>
+                <button type="button" onclick="Stop();">Stop</button>
+                <br><br>
+            </div>
+            <div class="model">
+                Graf radioaktivnega razpada:<br>
+                <canvas id="decay1" width="500" height="250" style="border: 1px solid #000000;"></canvas> <!-- Model -->
+            </div>
+            <div class="table1">
+                Tabela preračunanih vrednosti:<br>
+                <table border="1" id="table">
+                    <tr>
+                        <td>i</td><td>t</td><td>N (t)</td>
+                    </tr>
+                </table>
+            </div> 
+            <div id="footer">
+                <footer>
+                    <div class="footerContent">
+                        <p>&copy; Aljaž Mrakič 2019</p>
+                    </div>
+                </footer>
+            </div>
+        </div>
+        <!--************************** SCRIPT **************************-->
+        <script src="grafZvezni.js"></script>
+        <script type="text/javascript">
+        "use strict"; // omogočimo delo z razredi ("class")
+
+            // razpad atomov
+            let mass0 = null; // začetna masa
+            let mass1 = 0; // masa(t)
+            let lambda = null; // razpadna konstanta
+            let time = null; // pretekli čas (pretekli čas od začetka razpadanja)
+            let halfLifeTime = null; // razpolovni čas
+            let timeStep = null; // koliko vrednosti hočemo
+            let step = 0;
+            let afterTime = null;
+            let index = -1;
+        
+            // array za vrendosti modelov
+            let modelArray = new Array(); // array za celotne modele
+            let newMassArray = new Array(); // array za mass1 modelov
+            let stepArray = new Array(); // array za step
+
+            // tabela
+            let stack = new Array();
+
+            // kontrola modela
+            let startClick = 0;
+            let active;
+            let timeOfModel = 0;
+
+            // graf
+            let chart;
+            const canvas = document.getElementById("decay1");
+            const ctx = canvas.getContext("2d");
+            const canvasHeight = canvas.height; // pridobi višino platna
+            const canvasWidth = canvas.width; // pridobi širino platna
+            
+
+            class model{
+                constructor(mass0, halfLifeTime, step){
+                    this.mass0 = mass0; // začetna masa
+                    this.halfLifeTime = halfLifeTime; // razpolovni čas
+                    this.step = step; // čas korak
+                    this.mass1 = null; // masa(t)
+                    this.lambda = null; // razpadna konstanta
+                }
+
+                calculateLambda(){
+                    this.lambda = - (Math.log(0.5) / Math.log(Math.E)) / this.halfLifeTime; // izračunaj konstanto razpada
+                }
+
+                calculateMass1(){
+                    this.mass1 = this.mass0 * Math.pow(Math.E, (- this.lambda * this.step)); // izračunaj novo maso
+                }
+
+            }
+            
+            // funkcija za pridobitev vrednosti in pretvorbo v int
+            function getAndConvertInput(){ 
+                mass0 = document.getElementById("mass0").value;
+                mass0 = parseInt(mass0, 10);
+
+                halfLifeTime = document.getElementById("halflife").value;
+                halfLifeTime = parseInt(halfLifeTime, 10);
+
+                timeStep = document.getElementById("timestep").value;
+                timeStep = parseInt(timeStep, 10);
+
+                time = document.getElementById("time").value;
+                time = parseInt(time, 10);
+
+                afterTime = time;
+            }
+
+            // funkcija za izračun vrednosti za določen čas
+            function calculateValues(){
+                /*
+                for(let i = 0; i <= (time/timeStep); i++){
+                    modelArray[i] = new model(mass0, halfLifeTime, step);
+                    modelArray[i].calculateLambda();
+                    modelArray[i].calculateMass1();
+
+                    step += timeStep;
+                }
+                */
+                
+                time /= timeStep; // preračunamo koliko vrednosti hočemo
+
+                modelArray[0] = new model(mass0, halfLifeTime, step);
+                modelArray[0].calculateLambda();
+                modelArray[0].calculateMass1();
+
+                step += timeStep // prištejemo korak, ki ga dobimo iz UI
+
+                index++; // povečamo i za 1
+                
+            }
+
+            // funkcija za premik vrednosti v array niz in nato v tabelo
+            function tableAndValues(){
+
+                for(let i = 0; i < modelArray.length; i++){
+                    newMassArray.push(modelArray[i].mass1);
+                    stack.push(index);
+                    stack.push(modelArray[i].step);
+                    stack.push(modelArray[i].mass1.toFixed(2));
+                    createTable(stack);
+                    stack = [];
+                }
+
+            }
+
+            function createTable(stack){  
+
+                let table = document.getElementById("table");
+                let row = table.insertRow(table.rows.length);
+
+                let newCell;
+                let newText;
+
+                for(let i = 0; i < stack.length; i++){
+                    newCell = row.insertCell(i);
+                    newText = document.createTextNode(stack[i]);
+                    newCell.appendChild(newText);
+                }
+
+            }
+
+            // funkcija za graf
+            function chartValues(){
+                chart.draw(modelArray[0].mass1);
+            }
+
+            // funkcija zanka
+            function loop(){
+                calculateValues();
+                tableAndValues();
+                chartValues();
+            }
+
+            // funkcija ko se stran naloži
+            function load(){ 
+                time = document.getElementById("time").value;
+                time = parseInt(time, 10);
+
+                chart = new Chart("decay1", 500, 250);
+            }
+
+            // funkcija ki preverja ali naj model teče ali se ustavi
+            function startModel(){
+                if(step > afterTime){
+                    clearTimeout(active);
+                }
+                else{
+                    loop();
+                    active = setTimeout("startModel();", 5);
+                }
+            }
+
+            // funkcija gumba start
+            function Start(){
+                getAndConvertInput();
+                
+                if(startClick == 0){
+                    startClick = 1;
+                    startModel();
+                }       
+            }
+
+            // funkcija gumba stop
+            function Stop(){ 
+                if(active)
+                    clearTimeout(active);
+                
+                startClick = 0;
+            }
+
+        </script>
+        <!--********************** END of SCRIPT ***********************-->
+    </body>
+    <style type="text/css"> 
+        body{
+            margin: 0;
+        }
+        .container{
+            text-align: center;
+            background-color:rgb(154, 166, 177);
+            
+
+        }
+        header{
+            background-color: black;
+            height: 160px;
+            padding: 20px 20px;
+        }
+        .imeInPriimek{
+            font-family: sans-serif;
+            font-size: 20px;
+            font-style: italic;
+            color: white;
+            text-align: left;
+        }
+        .buttons{
+            text-align: center;
+        }
+        .button{
+            border: none;
+            color: white;
+            background-color: #008CBA;
+            padding: 15px 30px;
+            text-align: center;
+            font-family: sans-serif;
+            font-size: 16px;
+            margin: 10px 10px;
+            cursor: pointer;
+        }
+        .button:hover{
+            background-color: rgb(0, 106, 141);
+        }
+        form{
+            display: inline;
+        }
+        .naslov{
+            font-family: sans-serif;
+            font-size: 20px;
+            font-style: italic;
+        }
+        .paragraph{
+            font-size: 18px;
+            font-family: sans-serif;
+            text-align: center;
+        }
+        .model{
+            margin: 20px;
+        }
+        .chart1{
+           margin: 20px;
+        }
+        footer{
+            position: bottom;
+            bottom: 0;
+            width: 100%;
+            background-color: black;
+        }
+        table{
+            margin: auto;
+        }
+        .footerContent{
+            color: white;
+        }
+    </style>
+</html>
